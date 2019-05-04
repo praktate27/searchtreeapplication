@@ -33,6 +33,10 @@ import com.holidu.interview.assignment.domain.StreetTreeCensusData;
 public class SearchServiceImpl implements SearchService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SearchServiceImpl.class);
+    
+    private static List<StreetTreeCensusData> list;
+    
+    private final Double feetToMeterConverter = 3.281;
 
     @Override
     public String helloRest() {
@@ -40,14 +44,14 @@ public class SearchServiceImpl implements SearchService {
     }
 
     @Override
-    public Map<String, Integer> countOfCommonName(Double point, Double radius) {
+    public Map<String, Integer> countOfCommonName(Double xCoordinate, Double yCoordinate, Double radius) {
         Map<String, Integer> map = new HashMap<>();
         try {
-            String result = makeHttpGetCallToFetchData();
-            List<StreetTreeCensusData> list = buildStreetTreeCensusDataFromString(result);
+            
+            list = buildStreetTreeCensusDataFromString();
             if (!CollectionUtils.isEmpty(list)) {
                 list.forEach(l -> {
-                    if (isInsideArea(l.getXsp(), l.getYsp(), point, radius)) {
+                    if (isInsideArea(l.getXsp(), l.getYsp(), xCoordinate, yCoordinate, radius)) {
                         Integer count = map.getOrDefault(l.getSpcCommon(), 0);
                         count++;
                         map.put(l.getSpcCommon(), count);
@@ -68,10 +72,15 @@ public class SearchServiceImpl implements SearchService {
         return EntityUtils.toString(httpResponse.getEntity());
     }
 
-    private List<StreetTreeCensusData> buildStreetTreeCensusDataFromString(String result) {
+    private List<StreetTreeCensusData> buildStreetTreeCensusDataFromString() throws ParseException, IOException {
+        if (!CollectionUtils.isEmpty(list)) {
+            LOGGER.info("fetching from static");
+            return list;
+        }
+        String result = makeHttpGetCallToFetchData();
         Gson gson = new Gson();
         JsonElement jsonElement = gson.fromJson(result, JsonElement.class);
-        List<StreetTreeCensusData> list = new ArrayList<>();
+        list = new ArrayList<>();
         jsonElement.getAsJsonArray().forEach(a -> {
             StreetTreeCensusData data = new StreetTreeCensusData();
             JsonObject obj = a.getAsJsonObject();
@@ -80,14 +89,14 @@ public class SearchServiceImpl implements SearchService {
             } else {
                 data.setSpcCommon("Unknown");
             }
-            data.setXsp(obj.get("x_sp").getAsDouble());
-            data.setYsp(obj.get("y_sp").getAsDouble());
+            data.setXsp(obj.get("x_sp").getAsDouble() / feetToMeterConverter);
+            data.setYsp(obj.get("y_sp").getAsDouble() / feetToMeterConverter);
             list.add(data);
         });
         return list;
     }
 
-    private boolean isInsideArea(Double xcoordinate, Double ycoordinate, Double cartesianPoint, Double radius) {
-        return (((xcoordinate - cartesianPoint) * (xcoordinate - cartesianPoint)) + ((ycoordinate - cartesianPoint) * (ycoordinate - cartesianPoint))) <= (radius * radius);
+    private boolean isInsideArea(Double xcoordinate, Double ycoordinate, Double xCartesianPoint, Double yCartesianPoint, Double radius) {
+        return (((xcoordinate - xCartesianPoint) * (xcoordinate - xCartesianPoint)) + ((ycoordinate - yCartesianPoint) * (ycoordinate - yCartesianPoint))) <= (radius * radius);
     }
 }
