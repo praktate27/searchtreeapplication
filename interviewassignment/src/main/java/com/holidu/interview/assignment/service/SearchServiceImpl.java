@@ -17,6 +17,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -36,7 +37,10 @@ public class SearchServiceImpl implements SearchService {
     
     private static List<StreetTreeCensusData> list;
     
-    private final Double feetToMeterConverter = 3.281;
+    private final Double meterToFeetRatio = 3.281;
+    
+    @Value("${streettreecensus.resource}")
+    private String REQUEST_URL;
 
     @Override
     public String helloRest() {
@@ -47,27 +51,24 @@ public class SearchServiceImpl implements SearchService {
     public Map<String, Integer> countOfCommonName(Double xCoordinate, Double yCoordinate, Double radius) {
         Map<String, Integer> map = new HashMap<>();
         try {
-            
+
             list = buildStreetTreeCensusDataFromString();
             if (!CollectionUtils.isEmpty(list)) {
                 list.forEach(l -> {
-                    if (isInsideArea(l.getXsp(), l.getYsp(), xCoordinate, yCoordinate, radius)) {
-                        Integer count = map.getOrDefault(l.getSpcCommon(), 0);
-                        count++;
-                        map.put(l.getSpcCommon(), count);
+                    if (isInsideRadius(l.getXsp(), l.getYsp(), xCoordinate, yCoordinate, radius)) {
+                        map.put(l.getSpcCommon(), map.getOrDefault(l.getSpcCommon(), 0) + 1);
                     }
                 });
             }
         } catch (Exception e) {
-            LOGGER.error("Exception {}", e);
+            LOGGER.error("SearchServiceImpl::countOfCommonName Exception {}", e);
         }
         return map;
     }
 
     private String makeHttpGetCallToFetchData() throws ParseException, IOException {
         HttpClient httpClient = HttpClientBuilder.create().build();
-        String url = "https://data.cityofnewyork.us/resource/nwxe-4ae8.json?";
-        HttpGet httpGet = new HttpGet(url);
+        HttpGet httpGet = new HttpGet(REQUEST_URL);
         HttpResponse httpResponse = httpClient.execute(httpGet);
         return EntityUtils.toString(httpResponse.getEntity());
     }
@@ -89,14 +90,16 @@ public class SearchServiceImpl implements SearchService {
             } else {
                 data.setSpcCommon("Unknown");
             }
-            data.setXsp(obj.get("x_sp").getAsDouble() / feetToMeterConverter);
-            data.setYsp(obj.get("y_sp").getAsDouble() / feetToMeterConverter);
+            data.setXsp(obj.get("x_sp").getAsDouble());
+            data.setYsp(obj.get("y_sp").getAsDouble());
             list.add(data);
         });
         return list;
     }
 
-    private boolean isInsideArea(Double xcoordinate, Double ycoordinate, Double xCartesianPoint, Double yCartesianPoint, Double radius) {
-        return (((xcoordinate - xCartesianPoint) * (xcoordinate - xCartesianPoint)) + ((ycoordinate - yCartesianPoint) * (ycoordinate - yCartesianPoint))) <= (radius * radius);
+    private boolean isInsideRadius(Double xCoordinate, Double yCoordinate, Double xCartesianPoint, Double yCartesianPoint, Double radius) {
+        double xDelta = (xCoordinate - xCartesianPoint) / meterToFeetRatio;
+        double yDelta = (yCoordinate - yCartesianPoint) / meterToFeetRatio;
+        return ((xDelta * xDelta) + (yDelta * yDelta)) < (radius * radius);
     }
 }
