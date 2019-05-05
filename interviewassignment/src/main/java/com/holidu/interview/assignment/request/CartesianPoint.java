@@ -28,4 +28,9 @@ public class CartesianPoint {
         this.yCoordinate = yCoordinate;
     }
 
+    @Override
+    public String toString() {
+        return "CartesianPoint [xCoordinate=" + xCoordinate + ", yCoordinate=" + yCoordinate + "]";
+    }
+
 }

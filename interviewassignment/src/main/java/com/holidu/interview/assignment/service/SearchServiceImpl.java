@@ -48,7 +48,7 @@ public class SearchServiceImpl implements SearchService {
     }
 
     @Override
-    public Map<String, Integer> countOfCommonName(Double xCoordinate, Double yCoordinate, Double radius) {
+    public Map<String, Integer> getSearchResponse(Double xCoordinate, Double yCoordinate, Double radius) {
         Map<String, Integer> map = new HashMap<>();
         try {
 

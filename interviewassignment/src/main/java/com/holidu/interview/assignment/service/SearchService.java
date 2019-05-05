@@ -13,5 +13,5 @@ public interface SearchService {
 
     String helloRest();
     
-    Map<String, Integer> countOfCommonName(Double xCoordinate, Double yCoordinate, Double radius);
+    Map<String, Integer> getSearchResponse(Double xCoordinate, Double yCoordinate, Double radius);
 }
