@@ -34,24 +34,29 @@ import com.holidu.interview.assignment.domain.StreetTreeCensusData;
 public class SearchServiceImpl implements SearchService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SearchServiceImpl.class);
-    
+
     private static List<StreetTreeCensusData> list;
-    
+
     private final Double meterToFeetRatio = 3.281;
-    
+
     @Value("${streettreecensus.resource}")
-    private String REQUEST_URL;
+    private String streetTreeCensusResource;
 
     @Override
     public String helloRest() {
         return "HelloRest";
     }
 
+    /**
+     * @param xCoordinate
+     * @param yCoordinate
+     * @param radius
+     * @return HashMap<String, Integer>()
+     */
     @Override
     public Map<String, Integer> getSearchResponse(Double xCoordinate, Double yCoordinate, Double radius) {
         Map<String, Integer> map = new HashMap<>();
         try {
-
             list = buildStreetTreeCensusDataFromString();
             if (!CollectionUtils.isEmpty(list)) {
                 list.forEach(l -> {
@@ -61,21 +66,21 @@ public class SearchServiceImpl implements SearchService {
                 });
             }
         } catch (Exception e) {
-            LOGGER.error("SearchServiceImpl::countOfCommonName Exception {}", e);
+            LOGGER.error("SearchServiceImpl::getSearchResponse Exception {}", e);
         }
         return map;
     }
 
     private String makeHttpGetCallToFetchData() throws ParseException, IOException {
         HttpClient httpClient = HttpClientBuilder.create().build();
-        HttpGet httpGet = new HttpGet(REQUEST_URL);
+        HttpGet httpGet = new HttpGet(streetTreeCensusResource);
         HttpResponse httpResponse = httpClient.execute(httpGet);
         return EntityUtils.toString(httpResponse.getEntity());
     }
 
     private List<StreetTreeCensusData> buildStreetTreeCensusDataFromString() throws ParseException, IOException {
         if (!CollectionUtils.isEmpty(list)) {
-            LOGGER.info("fetching from static");
+//            LOGGER.info("fetching from static");
             return list;
         }
         String result = makeHttpGetCallToFetchData();

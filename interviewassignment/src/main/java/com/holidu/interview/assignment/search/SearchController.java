@@ -29,7 +29,11 @@ public class SearchController {
     
     @Autowired
     SearchService searchService;
-    
+    /**
+     * @param cartesianPoint
+     * @param radius
+     * @return HashMap<String, Integer>()
+     */
     @RequestMapping(name = "searchEndPoint", method = RequestMethod.GET, value = "/search")
     public Map<String, Integer> getSearchResponse(@RequestParam("cartesianPoint") String cartesianPoint, @RequestParam("radius") Double radius) {
         CartesianPoint point;
